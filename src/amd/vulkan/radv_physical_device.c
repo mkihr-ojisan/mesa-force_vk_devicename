@@ -1386,6 +1386,7 @@ radv_get_compiler_string(struct radv_physical_device *pdev)
 static void
 radv_get_physical_device_properties(struct radv_physical_device *pdev)
 {
+   const struct radv_instance *instance = radv_physical_device_instance(pdev);
    VkSampleCountFlags sample_counts = 0xf;
 
    size_t max_descriptor_set_size = radv_max_descriptor_set_size();
@@ -1959,7 +1960,10 @@ radv_get_physical_device_properties(struct radv_physical_device *pdev)
 
    struct vk_properties *p = &pdev->vk.properties;
 
-   strcpy(p->deviceName, pdev->marketing_name);
+   /* Vulkan 1.1 */
+   snprintf(
+      p->deviceName, sizeof(p->deviceName), "%s",
+      (strlen(instance->drirc.force_vk_devicename) > 0) ? instance->drirc.force_vk_devicename : pdev->marketing_name);
    memcpy(p->pipelineCacheUUID, pdev->cache_uuid, VK_UUID_SIZE);
 
    memcpy(p->deviceUUID, pdev->device_uuid, VK_UUID_SIZE);
@@ -2393,8 +2397,8 @@ radv_get_physical_device_queue_family_properties(struct radv_physical_device *pd
    }
 
    if (pdev->video_encode_enabled) {
-     if (pdev->info.ip[AMD_IP_VCN_ENC].num_queues > 0)
-       num_queue_families++;
+      if (pdev->info.ip[AMD_IP_VCN_ENC].num_queues > 0)
+         num_queue_families++;
    }
 
    if (radv_dedicated_sparse_queue_enabled(pdev)) {
@@ -2411,8 +2415,8 @@ radv_get_physical_device_queue_family_properties(struct radv_physical_device *pd
 
    idx = 0;
    if (*pCount >= 1) {
-      VkQueueFlags gfx_flags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT |
-                               VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT;
+      VkQueueFlags gfx_flags =
+         VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT;
       *pQueueFamilyProperties[idx] = (VkQueueFamilyProperties){
          .queueFlags = gfx_flags,
          .queueCount = 1,
